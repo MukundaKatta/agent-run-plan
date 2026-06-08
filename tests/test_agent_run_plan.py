@@ -123,6 +123,24 @@ def test_plan_no_name():
     assert plan.name == ""
 
 
+def test_plan_description():
+    plan = AgentRunPlan("task", description="A task description")
+    assert plan.description == "A task description"
+
+
+def test_plan_description_default():
+    plan = AgentRunPlan("task")
+    assert plan.description == ""
+
+
+def test_steps_returns_copy():
+    plan = AgentRunPlan()
+    plan.add_step("a")
+    returned = plan.steps()
+    returned.clear()
+    assert plan.step_count() == 1
+
+
 def test_plan_add_step_returns_step():
     plan = AgentRunPlan()
     step = plan.add_step("fetch", "Fetch data")
@@ -227,6 +245,26 @@ def test_mark_failed_missing_raises():
     plan = AgentRunPlan()
     with pytest.raises(KeyError):
         plan.mark_failed("ghost")
+
+
+def test_mark_skipped_missing_raises():
+    plan = AgentRunPlan()
+    with pytest.raises(KeyError):
+        plan.mark_skipped("ghost")
+
+
+def test_reset_step_missing_raises():
+    plan = AgentRunPlan()
+    with pytest.raises(KeyError):
+        plan.reset_step("ghost")
+
+
+def test_reset_step_keeps_metadata():
+    plan = AgentRunPlan()
+    plan.add_step("x", metadata={"k": 1})
+    plan.mark_done("x", result="data")
+    plan.reset_step("x")
+    assert plan.get("x").metadata == {"k": 1}
 
 
 # ---------------------------------------------------------------------------
