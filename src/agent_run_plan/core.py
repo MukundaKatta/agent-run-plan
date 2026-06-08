@@ -163,8 +163,11 @@ class AgentRunPlan:
             The new :class:`PlanStep`.
 
         Raises:
+            ValueError: If *name* is empty.
             KeyError: If *name* is already present.
         """
+        if not name:
+            raise ValueError("Step name must be a non-empty string")
         if name in self._step_index:
             raise KeyError(f"Step already exists: {name!r}")
         step = PlanStep(
@@ -280,9 +283,44 @@ class AgentRunPlan:
         """All steps with the given *status*."""
         return [s for s in self._steps if s.status == status]
 
+    def pending_steps(self) -> list[PlanStep]:
+        """All steps in PENDING state."""
+        return self.steps_by_status(StepStatus.PENDING)
+
+    def done_steps(self) -> list[PlanStep]:
+        """All steps in DONE state."""
+        return self.steps_by_status(StepStatus.DONE)
+
     def failed_steps(self) -> list[PlanStep]:
         """All steps in FAILED state."""
         return self.steps_by_status(StepStatus.FAILED)
+
+    def skipped_steps(self) -> list[PlanStep]:
+        """All steps in SKIPPED state."""
+        return self.steps_by_status(StepStatus.SKIPPED)
+
+    def summary(self) -> dict[str, int]:
+        """Return a count of steps grouped by status.
+
+        The returned mapping always contains every :class:`StepStatus`
+        value as a key (defaulting to ``0``), which makes it safe to use
+        directly in logging or dashboards without guarding for missing
+        keys.
+
+        Returns:
+            Mapping of status value (e.g. ``"pending"``) to count.
+        """
+        counts = {status.value: 0 for status in StepStatus}
+        for step in self._steps:
+            counts[step.status.value] += 1
+        return counts
+
+    def reset(self) -> None:
+        """Reset every step back to PENDING, clearing results and errors."""
+        for step in self._steps:
+            step.status = StepStatus.PENDING
+            step.result = None
+            step.error = ""
 
     # ------------------------------------------------------------------
     # Rendering
